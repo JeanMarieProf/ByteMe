@@ -727,3 +727,132 @@ class ByteArray {
 //   module.exports = ByteArray;
 // }
 export default ByteArray;
+
+  // Native Compression/Decompression using Compression Streams API
+
+  /**
+   * Compresses the ByteArray's content in-place using the specified algorithm.
+   * @param {string} algorithm - The compression algorithm (e.g., 'deflate-raw').
+   * @returns {Promise<void>} A promise that resolves when compression is complete or rejects on error.
+   * @throws {Error} If CompressionStream is not supported or if the algorithm is unsupported.
+   */
+  async compress(algorithm = 'deflate-raw') {
+    if (typeof CompressionStream === 'undefined') {
+      throw new Error('CompressionStream API not supported in this browser.');
+    }
+    if (algorithm !== 'deflate-raw' && algorithm !== 'deflate' && algorithm !== 'gzip') { // deflate-raw is the primary target
+      // Note: 'deflate' and 'gzip' are other valid values for CompressionStream
+      throw new Error(`Unsupported compression algorithm: ${algorithm}. Only 'deflate-raw', 'deflate', 'gzip' are typically supported by CompressionStream.`);
+    }
+
+    try {
+      const uncompressedDataBuffer = this.slice(0, this.length).buffer;
+      if (uncompressedDataBuffer.byteLength === 0) {
+        this.clear(); // Handles empty buffer case, already compressed effectively
+        return;
+      }
+
+      const cs = new CompressionStream(algorithm);
+      const writer = cs.writable.getWriter();
+      writer.write(uncompressedDataBuffer);
+      writer.close();
+
+      const reader = cs.readable.getReader();
+      const chunks = [];
+      let totalSize = 0;
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        totalSize += value.byteLength;
+      }
+
+      const compressedData = new Uint8Array(totalSize);
+      let offset = 0;
+      for (const chunk of chunks) {
+        compressedData.set(chunk, offset);
+        offset += chunk.byteLength;
+      }
+
+      this._buffer = compressedData.buffer;
+      this._dataView = new DataView(this._buffer);
+      this._length = compressedData.byteLength;
+      this._position = 0;
+
+    } catch (error) {
+      console.error(`ByteArray.compress: Error during compression with ${algorithm}.`, error);
+      throw error; // Re-throw the error for the caller to handle
+    }
+  }
+
+  /**
+   * Decompresses the ByteArray's content in-place using the specified algorithm.
+   * @param {string} algorithm - The decompression algorithm (e.g., 'deflate-raw').
+   * @returns {Promise<void>} A promise that resolves when decompression is complete or rejects on error.
+   * @throws {Error} If DecompressionStream is not supported or if the algorithm is unsupported.
+   */
+  async decompress(algorithm = 'deflate-raw') {
+    if (typeof DecompressionStream === 'undefined') {
+      throw new Error('DecompressionStream API not supported in this browser.');
+    }
+     if (algorithm !== 'deflate-raw' && algorithm !== 'deflate' && algorithm !== 'gzip') {
+      throw new Error(`Unsupported decompression algorithm: ${algorithm}. Only 'deflate-raw', 'deflate', 'gzip' are typically supported by DecompressionStream.`);
+    }
+
+    try {
+      const compressedDataBuffer = this.slice(0, this.length).buffer;
+       if (compressedDataBuffer.byteLength === 0) {
+        this.clear(); // Handles empty buffer case
+        return;
+      }
+
+      const ds = new DecompressionStream(algorithm);
+      const writer = ds.writable.getWriter();
+      writer.write(compressedDataBuffer);
+      writer.close();
+
+      const reader = ds.readable.getReader();
+      const chunks = [];
+      let totalSize = 0;
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        totalSize += value.byteLength;
+      }
+
+      const decompressedData = new Uint8Array(totalSize);
+      let offset = 0;
+      for (const chunk of chunks) {
+        decompressedData.set(chunk, offset);
+        offset += chunk.byteLength;
+      }
+
+      this._buffer = decompressedData.buffer;
+      this._dataView = new DataView(this._buffer);
+      this._length = decompressedData.byteLength;
+      this._position = 0;
+
+    } catch (error) {
+      console.error(`ByteArray.decompress: Error during decompression with ${algorithm}.`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Convenience method to decompress the ByteArray using 'deflate-raw'.
+   * Modifies the ByteArray in-place.
+   * @returns {Promise<void>}
+   */
+  async inflate() {
+    await this.decompress('deflate-raw');
+  }
+
+  /**
+   * Convenience method to compress the ByteArray using 'deflate-raw'.
+   * Modifies the ByteArray in-place.
+   * @returns {Promise<void>}
+   */
+  async deflate() {
+    await this.compress('deflate-raw');
+  }

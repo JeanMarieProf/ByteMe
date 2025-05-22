@@ -8,9 +8,8 @@ This application allows users to load a local `.docx` (Office Open XML) file, vi
 
 *   **`index.html`**: The main HTML page providing the user interface. It includes a file input, buttons to load and save, and a textarea to display and edit the XML content.
 *   **`test.js`**: Client-side JavaScript that orchestrates the application. It handles UI events (button clicks, file selection), interacts with the `ZipEditor` class to process the DOCX file, and manages the display of XML content and user messages.
-*   **`ZipEditor.js`**: An ES6 class library specifically designed for this project to parse, modify, and generate ZIP archives, with a focus on the structure of `.docx` files. It handles the reading of ZIP entries, decompression/compression of file data, updating file content, and assembling a new ZIP archive. This library depends on `ByteArray.js` for binary data manipulation and `pako.js` for DEFLATE compression/decompression.
-*   **`ByteArray.js`**: An ES6 class providing a robust set of utilities for reading from and writing to byte arrays. It supports various data types (integers, floats, strings), endianness control, dynamic buffer resizing, and advanced seek operations like `seekToValue(value, fromPosition)` and `seekBackToValue(value, fromPosition)`.
-*   **`pako.js`**: The `pako` DEFLATE (compression/decompression) library. It is used by `ZipEditor.js` to handle compressed file entries within the DOCX (ZIP) archive.
+*   **`ZipEditor.js`**: An ES6 class library specifically designed for this project to parse, modify, and generate ZIP archives, with a focus on the structure of `.docx` files. It handles the reading of ZIP entries, decompression/compression of file data (using `ByteArray.js`), updating file content, and assembling a new ZIP archive. It includes an internal JavaScript-based CRC32 calculation. This library depends on `ByteArray.js` for binary data manipulation.
+*   **`ByteArray.js`**: An ES6 class providing a robust set of utilities for reading from and writing to byte arrays. It supports various data types (integers, floats, strings), endianness control, dynamic buffer resizing, and advanced seek operations like `seekToValue(value, fromPosition)` and `seekBackToValue(value, fromPosition)`. It now also handles DEFLATE-raw compression/decompression using native browser Compression Streams API, via methods like `compress()`, `decompress()`, `inflate()`, and `deflate()`.
 
 ## How to Use
 
@@ -32,6 +31,7 @@ The `ByteArray.js` library provides comprehensive tools for binary data manipula
     *   `seek(offset, origin)`: Moves the read/write pointer to a specified offset from the beginning, current position, or end of the buffer.
     *   `seekToValue(value, fromPosition)`: Searches forward for a specified byte sequence (number, string, or Uint8Array) starting from `fromPosition` and moves the internal pointer to the start of the found sequence.
     *   `seekBackToValue(value, fromPosition)`: Searches backward for a specified byte sequence and moves the internal pointer accordingly.
+*   **Native Compression/Decompression**: Provides `async` methods (`compress`, `decompress`, `inflate`, `deflate`) to perform DEFLATE-raw compression and decompression using the browser's native Compression Streams API.
 *   **Utility Methods**: Includes methods like `slice()`, `getBytes()`, `setBytes()`, `clear()`, and properties like `bytesAvailable`, `length`, and `position`.
 
 ## Key Features of `ZipEditor.js`
@@ -42,16 +42,16 @@ The `ZipEditor.js` library is tailored for handling ZIP archives, particularly `
 *   **ZIP Structure Parsing**: Parses the ZIP Central Directory to identify all file entries and their metadata (name, size, compression method, offsets, etc.).
 *   **File Extraction**:
     *   Extracts individual file entries from the archive.
-    *   Supports decompression of file data for DEFLATE (compression method 8) and direct extraction for Store (compression method 0) using the `pako.js` library.
+    *   Supports decompression of file data for DEFLATE (compression method 8) and direct extraction for Store (compression method 0) using `ByteArray.js` which leverages native browser Compression Streams.
 *   **Entry Update**:
     *   Allows updating the content of an existing file entry with new data (provided as a string or `Uint8Array`).
-    *   Automatically re-calculates CRC32, updates compressed/uncompressed sizes, and timestamps.
-    *   Re-compresses the data using DEFLATE if the original entry was compressed, or stores it uncompressed.
+    *   Automatically re-calculates CRC32 (using an internal JS implementation), updates compressed/uncompressed sizes, and timestamps.
+    *   Re-compresses the data using DEFLATE (via `ByteArray.js` and native browser APIs) if the original entry was compressed, or stores it uncompressed.
 *   **ZIP Generation**:
     *   Generates a new, valid ZIP archive (`.docx` file in this context) as a `Blob`.
     *   Constructs the ZIP by writing local file headers, file data (either modified or original), the central directory, and the end of central directory record.
     *   Correctly handles offsets and metadata for all entries in the newly generated archive.
-*   **Modular Design**: Relies on `ByteArray.js` for low-level byte manipulation and `pako.js` for DEFLATE operations, promoting a clean separation of concerns.
+*   **Modular Design**: Relies on `ByteArray.js` for low-level byte manipulation including DEFLATE operations (via native browser APIs), promoting a clean separation of concerns.
 
 This project serves as a practical example of client-side DOCX manipulation, showcasing advanced JavaScript techniques for file handling and binary data processing.
 
@@ -68,9 +68,8 @@ Cette application permet aux utilisateurs de charger un fichier `.docx` local (O
 
 *   **`index.html`**: La page HTML principale fournissant l'interface utilisateur. Elle comprend un champ de sélection de fichier, des boutons pour charger et enregistrer, et une zone de texte pour afficher et modifier le contenu XML.
 *   **`test.js`**: JavaScript côté client qui orchestre l'application. Il gère les événements de l'interface utilisateur (clics sur les boutons, sélection de fichiers), interagit avec la classe `ZipEditor` pour traiter le fichier DOCX, et gère l'affichage du contenu XML et des messages utilisateur.
-*   **`ZipEditor.js`**: Une bibliothèque de classes ES6 spécifiquement conçue pour ce projet afin d'analyser, de modifier et de générer des archives ZIP, avec un accent sur la structure des fichiers `.docx`. Elle gère la lecture des entrées ZIP, la décompression/compression des données de fichiers, la mise à jour du contenu des fichiers et l'assemblage d'une nouvelle archive ZIP. Cette bibliothèque dépend de `ByteArray.js` pour la manipulation des données binaires et de `pako.js` pour la compression/décompression DEFLATE.
-*   **`ByteArray.js`**: Une classe ES6 fournissant un ensemble robuste d'utilitaires pour lire et écrire dans des tableaux d'octets. Elle prend en charge divers types de données (entiers, flottants, chaînes de caractères), le contrôle de l'endianness (boutisme), le redimensionnement dynamique du tampon et des opérations de recherche avancées comme `seekToValue(valeur, positionDeDepart)` et `seekBackToValue(valeur, positionDeDepart)`.
-*   **`pako.js`**: La bibliothèque `pako` DEFLATE (compression/décompression). Elle est utilisée par `ZipEditor.js` pour gérer les entrées de fichiers compressés dans l'archive DOCX (ZIP).
+*   **`ZipEditor.js`**: Une bibliothèque de classes ES6 spécifiquement conçue pour ce projet afin d'analyser, de modifier et de générer des archives ZIP, avec un accent sur la structure des fichiers `.docx`. Elle gère la lecture des entrées ZIP, la décompression/compression des données de fichiers (en utilisant `ByteArray.js`), la mise à jour du contenu des fichiers et l'assemblage d'une nouvelle archive ZIP. Elle inclut un calcul CRC32 interne basé sur JavaScript. Cette bibliothèque dépend de `ByteArray.js` pour la manipulation des données binaires.
+*   **`ByteArray.js`**: Une classe ES6 fournissant un ensemble robuste d'utilitaires pour lire et écrire dans des tableaux d'octets. Elle prend en charge divers types de données (entiers, flottants, chaînes de caractères), le contrôle de l'endianness (boutisme), le redimensionnement dynamique du tampon et des opérations de recherche avancées comme `seekToValue(valeur, positionDeDepart)` et `seekBackToValue(valeur, positionDeDepart)`. Elle gère maintenant aussi la compression/décompression DEFLATE-raw via l'API native Compression Streams du navigateur, avec des méthodes comme `compress()`, `decompress()`, `inflate()`, et `deflate()`.
 
 ## Comment Utiliser
 
@@ -92,6 +91,7 @@ La bibliothèque `ByteArray.js` fournit des outils complets pour la manipulation
     *   `seek(offset, origine)`: Déplace le pointeur de lecture/écriture à un décalage spécifié depuis le début, la position actuelle ou la fin du tampon.
     *   `seekToValue(valeur, positionDeDepart)`: Recherche vers l'avant une séquence d'octets spécifiée (nombre, chaîne ou Uint8Array) à partir de `positionDeDepart` et déplace le pointeur interne au début de la séquence trouvée.
     *   `seekBackToValue(valeur, positionDeDepart)`: Recherche vers l'arrière une séquence d'octets spécifiée et déplace le pointeur interne en conséquence.
+*   **Compression/Décompression Native**: Fournit des méthodes `async` (`compress`, `decompress`, `inflate`, `deflate`) pour effectuer la compression et la décompression DEFLATE-raw en utilisant l'API native Compression Streams du navigateur.
 *   **Méthodes Utilitaires**: Comprend des méthodes comme `slice()`, `getBytes()`, `setBytes()`, `clear()`, et des propriétés comme `bytesAvailable`, `length`, et `position`.
 
 ## Fonctionnalités Clés de `ZipEditor.js`
@@ -102,15 +102,15 @@ La bibliothèque `ZipEditor.js` est conçue pour la gestion des archives ZIP, en
 *   **Analyse de la Structure ZIP**: Analyse le Répertoire Central du ZIP pour identifier toutes les entrées de fichiers et leurs métadonnées (nom, taille, méthode de compression, décalages, etc.).
 *   **Extraction de Fichiers**:
     *   Extrait les entrées de fichiers individuelles de l'archive.
-    *   Prend en charge la décompression des données de fichiers pour DEFLATE (méthode de compression 8) et l'extraction directe pour Store (méthode de compression 0) en utilisant la bibliothèque `pako.js`.
+    *   Prend en charge la décompression des données de fichiers pour DEFLATE (méthode de compression 8) et l'extraction directe pour Store (méthode de compression 0) en utilisant `ByteArray.js` qui s'appuie sur les API natives Compression Streams du navigateur.
 *   **Mise à Jour d'Entrées**:
     *   Permet de mettre à jour le contenu d'une entrée de fichier existante avec de nouvelles données (fournies sous forme de chaîne ou d'`Uint8Array`).
-    *   Recalcule automatiquement le CRC32, met à jour les tailles compressées/non compressées et les horodatages.
-    *   Recompresse les données en utilisant DEFLATE si l'entrée originale était compressée, ou les stocke non compressées.
+    *   Recalcule automatiquement le CRC32 (en utilisant une implémentation JS interne), met à jour les tailles compressées/non compressées et les horodatages.
+    *   Recompresse les données en utilisant DEFLATE (via `ByteArray.js` et les API natives du navigateur) si l'entrée originale était compressée, ou les stocke non compressées.
 *   **Génération de ZIP**:
     *   Génère une nouvelle archive ZIP valide (fichier `.docx` dans ce contexte) sous forme de `Blob`.
     *   Construit le ZIP en écrivant les en-têtes de fichiers locaux, les données des fichiers (modifiées ou originales), le répertoire central et l'enregistrement de fin de répertoire central.
     *   Gère correctement les décalages et les métadonnées pour toutes les entrées dans l'archive nouvellement générée.
-*   **Conception Modulaire**: S'appuie sur `ByteArray.js` pour la manipulation de bas niveau des octets et sur `pako.js` pour les opérations DEFLATE, favorisant une séparation claire des préoccupations.
+*   **Conception Modulaire**: S'appuie sur `ByteArray.js` pour la manipulation de bas niveau des octets, y compris les opérations DEFLATE (via les API natives du navigateur), favorisant une séparation claire des préoccupations.
 
 Ce projet sert d'exemple pratique de manipulation de DOCX côté client, mettant en valeur des techniques JavaScript avancées pour la gestion de fichiers et le traitement de données binaires.

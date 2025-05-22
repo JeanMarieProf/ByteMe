@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
         messageArea.className = type; // 'success', 'error', or reset to empty for info
     }
 
+    // Make the loadButton event listener async
     loadButton.addEventListener('click', async () => {
         xmlContentDisplay.value = '';
         showMessage(''); // Clear previous messages
@@ -61,7 +62,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             showMessage('File loaded. Extracting word/document.xml...', 'info');
-            const xmlContent = currentZipEditor.extractEntry('word/document.xml', 'string');
+            // Await the extractEntry call
+            const xmlContent = await currentZipEditor.extractEntry('word/document.xml', 'string');
 
             if (xmlContent === null || typeof xmlContent === 'undefined') {
                 const entryExists = currentZipEditor.getEntry('word/document.xml');
@@ -77,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showMessage('word/document.xml loaded and displayed successfully. You can now edit the content.', 'success');
                 saveButton.style.display = 'inline-block'; // Show save button
                 if (xmlContent === '' && currentZipEditor.getEntry('word/document.xml')?.uncompressedSize > 0) {
-                    showMessage('word/document.xml extracted, but content is empty. This might be due to the pako.js placeholder. Full pako library is needed for actual decompression.', 'warning');
+                    showMessage('word/document.xml extracted, but content is empty despite the entry indicating it has uncompressed data. This might suggest an issue with the file or the decompression process.', 'warning');
                 } else if (xmlContent === '') {
                      showMessage('word/document.xml extracted and it is an empty file.', 'success');
                 }
@@ -92,7 +94,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    saveButton.addEventListener('click', () => {
+    // Make the saveButton event listener async
+    saveButton.addEventListener('click', async () => {
         if (!currentZipEditor) {
             showMessage('No DOCX file loaded or an error occurred during loading. Please load a file first.', 'error');
             return;
@@ -102,7 +105,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         try {
             showMessage('Updating word/document.xml content...', 'info');
-            const updateSuccess = currentZipEditor.updateEntry('word/document.xml', modifiedXmlContent);
+            // Await the updateEntry call
+            const updateSuccess = await currentZipEditor.updateEntry('word/document.xml', modifiedXmlContent);
 
             if (!updateSuccess) {
                 showMessage('Failed to update word/document.xml content. Check console for details.', 'error');
