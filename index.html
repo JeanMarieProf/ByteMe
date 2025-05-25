@@ -3,33 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DOCX Content Editor</title>
+    <title>Créateur d'Archive ZIP Interactive</title>
     <style>
         body { font-family: sans-serif; margin: 20px; }
-        #xmlContentDisplay { width: 90%; height: 400px; margin-top: 10px; border: 1px solid #ccc; padding: 5px; }
-        #messageArea { margin-top: 10px; padding: 10px; border: 1px solid transparent; }
-        .success { border-color: green; background-color: #e6ffe6; color: green; }
-        .error { border-color: red; background-color: #ffe6e6; color: red; }
+        /* #xmlContentDisplay { width: 90%; height: 400px; margin-top: 10px; border: 1px solid #ccc; padding: 5px; } */
+        /* #messageArea { margin-top: 10px; padding: 10px; border: 1px solid transparent; } */ /* Replaced by specific classes */
+
+        #fileList {
+            border: 1px solid #ccc;
+            min-height: 100px;
+            padding: 10px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            overflow-y: auto;
+            max-height: 300px;
+        }
+
+        #fileList li {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            cursor: move; /* When draggable */
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        #fileList li:hover {
+            background-color: #f9f9f9;
+        }
+
+        #fileList li.dragging { /* Style for the item being dragged */
+            opacity: 0.5;
+            background-color: #e0e0e0;
+        }
+
+        #fileList li button {
+            margin-left: 10px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            color: #ff0000; /* Red for delete */
+            font-weight: bold;
+            font-size: 1.1em; /* Make the '✖' slightly larger */
+        }
+
+        #fileList li button:hover {
+            opacity: 0.7;
+        }
+
+        /* Message Area Styles from script.js class names */
+        .info { 
+            border: 1px solid blue; /* Added border for consistency */
+            background-color: #e6f7ff; 
+            color: blue; 
+            padding: 10px; 
+            margin-top: 10px; 
+        }
+        .succes { /* As used in script.js */
+            border: 1px solid green; /* Added border for consistency */
+            background-color: #e6ffe6; 
+            color: green; 
+            padding: 10px; 
+            margin-top: 10px; 
+        }
+        .erreur { /* As used in script.js */
+            border: 1px solid red; /* Added border for consistency */
+            background-color: #ffe6e6; 
+            color: red; 
+            padding: 10px; 
+            margin-top: 10px; 
+        }
+        /* Keep existing .success and .error if they are still used elsewhere, or remove if fully replaced by .succes and .erreur */
+        /* For this task, assuming .succes and .erreur are the primary ones from script.js */
+        .success { border-color: green; background-color: #e6ffe6; color: green; padding: 10px; margin-top: 10px; }
+        .error { border-color: red; background-color: #ffe6e6; color: red; padding: 10px; margin-top: 10px; }
     </style>
 </head>
 <body>
-    <h1>DOCX Content Viewer</h1>
-    <p>Select a .docx file to view its word/document.xml content.</p>
+    <h1>Créateur d'Archive ZIP</h1>
+    <p>Sélectionnez les fichiers à ajouter à l'archive ZIP. Vous pouvez les réorganiser par glisser-déposer.</p>
 
-    <input type="file" id="docxFileInput" accept=".docx">
-    <button id="loadButton">Load and Display word/document.xml</button>
-    <button id="saveButton" style="display: none;">Save Modified DOCX</button>
+    <input type="file" id="fileInput" multiple>
+    <button id="archiveButton" style="display: none;">Archiver</button>
+    <ul id="fileList"></ul>
 
-    <h2>word/document.xml Content:</h2>
-    <textarea id="xmlContentDisplay"></textarea>
-
-    <h2>Messages:</h2>
+    <h2>Messages :</h2>
     <div id="messageArea"></div>
 
     <!-- Scripts -->
     <!-- pako.js is imported by ZipEditor.js as a module -->
     <script type="module" src="ByteArray.js"></script>
     <script type="module" src="ZipEditor.js"></script>
-    <script type="module" src="test.js" defer></script>
+    <script type="module" src="script.js" defer></script>
 </body>
 </html>
