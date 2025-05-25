@@ -1,0 +1,7 @@
+This is a test file.
+It contains some text to be zipped.
+Hello, world!
+1234567890
+ABCDEFGHIJKLMNOPQRSTUVWXYZ
+abcdefghijklmnopqrstuvwxyz
+!@#$%^&*()_+
